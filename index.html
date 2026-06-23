@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>결혼식 청첩장 디자인 비교 분석 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg:#faf7f5; --card:#ffffff; --ink:#2c2420; --muted:#8a7e76;
+    --line:#ece4de; --accent:#c08562; --accent2:#7a9a8a; --accent3:#b9889c;
+    --gold:#d8b16a; --soft:#f3ece7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 22px 80px}
+  header.top{text-align:center;padding:24px 0 8px}
+  header.top .eyebrow{letter-spacing:.32em;font-size:12px;color:var(--accent);font-weight:700}
+  header.top h1{font-size:30px;margin:10px 0 6px;font-weight:800;letter-spacing:-.5px}
+  header.top p{color:var(--muted);font-size:14px}
+  .meta{font-size:12px;color:var(--muted);margin-top:10px}
+  section{margin-top:40px}
+  .sec-title{font-size:18px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .sec-title .bar{width:5px;height:18px;background:var(--accent);border-radius:3px}
+  .sec-sub{color:var(--muted);font-size:13px;margin:0 0 16px 13px}
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px;text-align:center}
+  .kpi .v{font-size:26px;font-weight:800;color:var(--accent)}
+  .kpi .l{font-size:12.5px;color:var(--muted);margin-top:4px}
+  /* grid charts */
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+  .panel h3{font-size:14.5px;margin-bottom:12px;font-weight:700}
+  .chart-box{position:relative;height:300px}
+  .chart-box.sm{height:300px}
+  /* filters */
+  .filters{display:flex;flex-wrap:wrap;gap:18px;background:var(--card);border:1px solid var(--line);
+    border-radius:16px;padding:16px 18px;margin-bottom:16px;align-items:center}
+  .fgroup{display:flex;flex-direction:column;gap:6px}
+  .fgroup .flabel{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:20px;
+    padding:5px 12px;font-size:12.5px;cursor:pointer;transition:.15s;user-select:none}
+  .chip:hover{border-color:var(--accent)}
+  .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .reset{margin-left:auto;font-size:12px;color:var(--accent);cursor:pointer;border:none;background:none;font-weight:700}
+  /* cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;
+    display:flex;flex-direction:column;gap:10px;transition:.18s;position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(160,120,90,.13)}
+  .card .swatch{height:6px;border-radius:6px;margin:-2px 0 4px}
+  .card .ttl{font-size:16px;font-weight:800}
+  .card .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+    background:var(--soft);color:var(--accent);width:fit-content}
+  .card .desc{font-size:12.8px;color:var(--muted);min-height:54px}
+  .card .rows{font-size:12.3px;display:flex;flex-direction:column;gap:5px;margin-top:2px}
+  .card .row{display:flex;justify-content:space-between;border-top:1px dashed var(--line);padding-top:5px}
+  .card .row span:first-child{color:var(--muted)}
+  .card .row span:last-child{font-weight:700;text-align:right}
+  .stars{color:var(--gold);letter-spacing:1px}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px}
+  /* table */
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;
+    border:1px solid var(--line);font-size:13px}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:var(--soft);font-weight:700;font-size:12px;color:var(--ink);cursor:pointer;white-space:nowrap}
+  th:hover{color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700}
+  .pill.mo{background:#e7f0ec;color:#487a64}
+  .pill.pa{background:#f6e9ec;color:#a85d76}
+  .pill.set{background:#f0ead8;color:#9a7d3a}
+  .note{font-size:11.5px;color:var(--muted);margin-top:10px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  footer{margin-top:48px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.7}
+  /* tab nav */
+  .tabnav{display:flex;justify-content:center;gap:6px;margin:18px auto 0;background:var(--soft);
+    border:1px solid var(--line);border-radius:30px;padding:5px;width:fit-content}
+  .tabnav button{border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;
+    color:var(--muted);padding:9px 22px;border-radius:24px;cursor:pointer;transition:.15s}
+  .tabnav button.on{background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(192,133,98,.3)}
+  .view{display:none}.view.active{display:block}
+  /* maker layout */
+  .maker{display:grid;grid-template-columns:1fr 380px;gap:26px;align-items:start;margin-top:24px}
+  .builder{display:flex;flex-direction:column;gap:18px}
+  .b-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 20px}
+  .b-card h4{font-size:13.5px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+  .b-card h4 .n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;
+    font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:9px;
+    padding:9px 11px;font-family:inherit;font-size:13px;color:var(--ink);background:#fff;transition:.15s}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .field textarea{resize:vertical;min-height:60px;line-height:1.5}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .templates{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .tpl{border:2px solid var(--line);border-radius:12px;padding:10px 6px;cursor:pointer;text-align:center;
+    transition:.15s;background:#fff}
+  .tpl:hover{border-color:var(--accent)}
+  .tpl.on{border-color:var(--accent);background:var(--soft)}
+  .tpl .dot{width:26px;height:26px;border-radius:50%;margin:0 auto 6px;border:1px solid rgba(0,0,0,.06)}
+  .tpl .tn{font-size:11px;font-weight:700}
+  .palette{display:flex;gap:8px;flex-wrap:wrap}
+  .sw{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid #fff;
+    box-shadow:0 0 0 1px var(--line);transition:.15s}
+  .sw.on{box-shadow:0 0 0 2px var(--accent);transform:scale(1.12)}
+  .toggle{display:flex;align-items:center;gap:9px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+  .toggle input{width:auto}
+  .hint{font-size:11px;color:var(--muted);margin-top:5px}
+  /* phone preview */
+  .preview-col{position:sticky;top:18px}
+  .phone{width:340px;margin:0 auto;background:#1b1b1f;border-radius:38px;padding:12px;
+    box-shadow:0 18px 50px rgba(60,40,30,.22)}
+  .screen{background:#fff;border-radius:28px;overflow:hidden;height:600px;overflow-y:auto;position:relative}
+  .screen::-webkit-scrollbar{width:0}
+  .inv{font-family:inherit;color:#3a322c}
+  .inv .hero{padding:42px 24px 30px;text-align:center;position:relative}
+  .inv .hero .label{font-size:11px;letter-spacing:.3em;font-weight:700;opacity:.7}
+  .inv .photo{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;margin:16px 0;
+    background:#eee9e4 center/cover}
+  .inv .photo.ph{display:flex;align-items:center;justify-content:center;color:#b3a89e;font-size:12px}
+  .inv .photo.motif{display:flex;align-items:center;justify-content:center;background:#faf6f2}
+  .inv .photo.motif svg{width:82%;height:82%}
+  .inv .names{font-size:23px;font-weight:800;margin:6px 0 3px;letter-spacing:-.3px}
+  .inv .date{font-size:13px;opacity:.85}
+  .inv .sec{padding:26px 26px;text-align:center;border-top:1px solid #f0ebe6}
+  .inv .sec .st{font-size:11px;letter-spacing:.25em;font-weight:700;margin-bottom:12px;opacity:.65}
+  .inv .greet{font-size:13.5px;line-height:2;white-space:pre-line}
+  .inv .info-row{font-size:13.5px;line-height:1.9}
+  .inv .info-row b{font-weight:700}
+  .inv .dday{display:inline-block;margin-top:10px;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:700}
+  .inv .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}
+  .inv .gallery div{aspect-ratio:1;border-radius:7px;background:#ece6e0}
+  .inv .acct{font-size:12.5px;line-height:1.95;background:#faf6f2;border-radius:10px;padding:13px 15px;text-align:left}
+  .inv .map-ph{height:120px;border-radius:10px;background:#eae4dd;display:flex;align-items:center;
+    justify-content:center;color:#a99e93;font-size:12px;margin-bottom:10px}
+  .inv .rsvp-btn{margin-top:8px;display:inline-block;padding:11px 26px;border-radius:24px;color:#fff;
+    font-size:13px;font-weight:700}
+  .inv .foot{padding:24px;text-align:center;font-size:11px;opacity:.5}
+  .export-bar{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+  .btn{border:none;border-radius:11px;padding:12px;font-family:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:#a86f4f}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .maker-intro{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;
+    font-size:13px;color:var(--muted);margin-top:8px;line-height:1.7}
+  .maker-intro b{color:var(--ink)}
+  @media(max-width:880px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.two{grid-template-columns:1fr}
+    .cards{grid-template-columns:1fr}.filters{flex-direction:column;align-items:flex-start}
+    .maker{grid-template-columns:1fr}.preview-col{position:static}.templates{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">WEDDING INVITATION ANALYTICS</div>
+    <h1>결혼식 청첩장 디자인 비교 분석</h1>
+    <p>디자인 스타일 · 전달 방식 · 가격/제작 · 실용성 4개 축으로 보는 시장 트렌드 대시보드</p>
+    <div class="meta">데이터 출처: 네이버 데이터랩 검색 트렌드 · 네이버 쇼핑 가격 · 블로그 후기 분석 (2026.06 기준)</div>
+  </header>
+
+  <nav class="tabnav">
+    <button class="on" data-tab="analysis">📊 비교 분석</button>
+    <button data-tab="maker">✏️ 셀프 제작 툴</button>
+  </nav>
+
+  <!-- ============ ANALYSIS VIEW ============ -->
+  <div id="view-analysis" class="view active">
+
+  <!-- KPI -->
+  <section>
+    <div class="kpis">
+      <div class="kpi"><div class="v">8</div><div class="l">주요 디자인 스타일 유형</div></div>
+      <div class="kpi"><div class="v">13~16배</div><div class="l">모바일 vs 종이 검색량 격차</div></div>
+      <div class="kpi"><div class="v">+84%</div><div class="l">셀프 제작 검색 증가 (3년)</div></div>
+      <div class="kpi"><div class="v">8·9월</div><div class="l">검색 수요 연중 피크 시즌</div></div>
+    </div>
+  </section>
+
+  <!-- TREND -->
+  <section>
+    <div class="sec-title"><span class="bar"></span>전달 방식별 검색 트렌드</div>
+    <p class="sec-sub">모바일이 시장을 압도하는 가운데 '셀프 제작' 수요가 꾸준히 성장 중 (네이버 검색 상대지수)</p>
+    <div class="grid2">
+      <div class="panel"><h3>방식별 검색 관심도 추이 (2023.06 ~ 2026.06)</h3>
+        <div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+      <div class="panel"><h3>전달 방식 점유 구조</h3>
+        <div class="chart-box sm"><canvas id="shareChart"></canvas></div>
+        <p class="note">모바일 청첩장이 검색 수요의 대부분을 차지. 종이는 부모님 세대·격식 예식 중심으로 유지.</p></div>
+    </div>
+  </section>
+
+  <!-- RADAR -->
+  <section>
+    <div class="sec-title"><span class="bar"></span>유형별 특성 레이더</div>
+    <p class="sec-sub">대표 4개 유형을 5개 지표로 비교 (5점 만점, 점수가 높을수록 우수)</p>
+    <div class="grid2">
+      <div class="panel"><h3>유형별 다차원 비교</h3>
+        <div class="chart-box"><canvas id="radarChart"></canvas></div></div>
+      <div class="panel"><h3>가격대 분포 (1인 기준 / 만원)</h3>
+        <div class="chart-box sm"><canvas id="priceChart"></canvas></div>
+        <p class="note">모바일·종이 소량셀프는 1~2만원대, 브랜드 종이·커스텀 일러스트는 6~15만원대로 양극화.</p></div>
+    </div>
+  </section>
+
+  <!-- CARDS + FILTER -->
+  <section>
+    <div class="sec-title"><span class="bar"></span>디자인 스타일 카드 비교</div>
+    <p class="sec-sub">필터를 선택해 원하는 조건의 청첩장 유형만 살펴보세요</p>
+    <div class="filters">
+      <div class="fgroup"><span class="flabel">전달 방식</span>
+        <div class="chips" data-dim="delivery">
+          <span class="chip on" data-v="all">전체</span>
+          <span class="chip" data-v="모바일">모바일</span>
+          <span class="chip" data-v="종이">종이</span>
+          <span class="chip" data-v="세트">세트</span>
+        </div></div>
+      <div class="fgroup"><span class="flabel">가격대</span>
+        <div class="chips" data-dim="price">
+          <span class="chip on" data-v="all">전체</span>
+          <span class="chip" data-v="저">저가 (~2만)</span>
+          <span class="chip" data-v="중">중가 (2~6만)</span>
+          <span class="chip" data-v="고">고가 (6만~)</span>
+        </div></div>
+      <div class="fgroup"><span class="flabel">분위기</span>
+        <div class="chips" data-dim="mood">
+          <span class="chip on" data-v="all">전체</span>
+          <span class="chip" data-v="모던">모던·심플</span>
+          <span class="chip" data-v="격식">격식·클래식</span>
+          <span class="chip" data-v="감성">감성·내추럴</span>
+        </div></div>
+      <button class="reset" id="resetBtn">↺ 필터 초기화</button>
+    </div>
+    <div class="cards" id="cardGrid"></div>
+  </section>
+
+  <!-- TABLE -->
+  <section>
+    <div class="sec-title"><span class="bar"></span>전체 비교 표</div>
+    <p class="sec-sub">열 제목을 클릭하면 정렬됩니다. 4개 비교축을 한눈에 확인하세요</p>
+    <div style="overflow-x:auto">
+      <table id="compTable">
+        <thead><tr>
+          <th data-k="name">유형</th>
+          <th data-k="delivery">전달 방식</th>
+          <th data-k="priceMid" class="num">평균가(만원)</th>
+          <th data-k="custom" class="num">커스텀</th>
+          <th data-k="ease" class="num">제작편의</th>
+          <th data-k="practical" class="num">실용성</th>
+          <th data-k="trend" class="num">트렌드</th>
+          <th data-k="moodLabel">어울리는 예식</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note">커스텀·제작편의·실용성·트렌드는 블로그 후기 및 제품 사양 기반 5점 척도 정성 평가입니다.</p>
+  </section>
+
+  </div><!-- /view-analysis -->
+
+  <!-- ============ MAKER VIEW ============ -->
+  <div id="view-maker" class="view">
+    <section style="margin-top:24px">
+      <div class="sec-title"><span class="bar"></span>모바일 청첩장 셀프 제작 툴</div>
+      <p class="sec-sub">정보를 입력하면 오른쪽 미리보기가 실시간으로 바뀝니다. 완성되면 이미지·HTML로 저장하거나 카톡 공유 문구를 복사하세요</p>
+      <div class="maker-intro">
+        실제 모바일 청첩장 표준 구성(<b>메인 · 인사말 · 예식 안내 · 갤러리 · 오시는 길 · 마음 전하실 곳 · 참석 의사</b>)을 그대로 담았어요.
+        8가지 분석 유형 중 원하는 <b>템플릿 스타일</b>과 <b>색상 테마</b>를 고르고 내용을 채우면 됩니다.
+      </div>
+
+      <div class="maker">
+        <!-- LEFT: builder -->
+        <div class="builder">
+          <div class="b-card">
+            <h4><span class="n">1</span>템플릿 스타일</h4>
+            <div class="templates" id="tplGrid"></div>
+            <div class="field" style="margin-top:14px">
+              <label>색상 테마</label>
+              <div class="palette" id="palette"></div>
+            </div>
+          </div>
+
+          <div class="b-card">
+            <h4><span class="n">2</span>메인 정보</h4>
+            <div class="frow">
+              <div class="field"><label>신랑 이름</label><input id="i_groom" value="김민준"></div>
+              <div class="field"><label>신부 이름</label><input id="i_bride" value="이서연"></div>
+            </div>
+            <div class="frow">
+              <div class="field"><label>예식 날짜</label><input id="i_date" type="date" value="2026-10-17"></div>
+              <div class="field"><label>예식 시간</label><input id="i_time" type="time" value="13:00"></div>
+            </div>
+            <div class="field"><label>대표 인사 문구</label>
+              <input id="i_headline" value="저희 두 사람, 사랑으로 하나가 됩니다"></div>
+            <div class="field"><label>대표 이미지 표현 방식</label>
+              <div class="chips" id="imgStyleChips">
+                <span class="chip on" data-v="photo">📷 실제 사진</span>
+                <span class="chip" data-v="illust">🎨 일러스트풍</span>
+                <span class="chip" data-v="sketch">✏️ 어반스케치</span>
+                <span class="chip" data-v="water">💧 수채화</span>
+                <span class="chip" data-v="line">〰️ 라인아트</span>
+                <span class="chip" data-v="motif">🌿 사진없이·플라워</span>
+              </div>
+              <div class="hint">사진을 올린 뒤 표현 방식을 고르면 그 느낌으로 자동 변환돼요. '플라워'는 사진 없이 일러스트 배경을 씁니다.</div>
+            </div>
+            <div class="field" id="photoField"><label>대표 사진 업로드</label>
+              <input id="i_photo" type="file" accept="image/*">
+              <div class="hint">업로드 전에는 placeholder가 표시됩니다.</div>
+            </div>
+          </div>
+
+          <div class="b-card">
+            <h4><span class="n">3</span>인사말</h4>
+            <div class="field"><textarea id="i_greeting">두 사람이 사랑으로 만나
+하나의 가정을 이루게 되었습니다.
+
+귀한 걸음으로 축복해 주시면
+더없는 기쁨으로 간직하겠습니다.</textarea></div>
+            <div class="frow">
+              <div class="field"><label>신랑측 혼주 (아버지·어머니 / 아들)</label><input id="i_gparents" value="김정훈 · 박은영 의 아들 민준"></div>
+              <div class="field"><label>신부측 혼주 (아버지·어머니 / 딸)</label><input id="i_bparents" value="이성호 · 최미경 의 딸 서연"></div>
+            </div>
+          </div>
+
+          <div class="b-card">
+            <h4><span class="n">4</span>예식장 · 오시는 길</h4>
+            <div class="field"><label>예식장 이름 / 홀</label><input id="i_venue" value="그랜드 웨딩홀 5층 그랜드볼룸"></div>
+            <div class="field"><label>주소</label><input id="i_addr" value="서울특별시 강남구 테헤란로 123"></div>
+            <div class="field"><label>교통 · 주차 안내</label>
+              <textarea id="i_transport">지하철 2호선 강남역 3번 출구 도보 5분
+건물 내 지하주차장 2시간 무료</textarea></div>
+          </div>
+
+          <div class="b-card">
+            <h4><span class="n">5</span>마음 전하실 곳 · 참석 의사</h4>
+            <div class="frow">
+              <div class="field"><label>신랑측 계좌</label><input id="i_gacct" value="국민 123456-01-789012 김민준"></div>
+              <div class="field"><label>신부측 계좌</label><input id="i_bacct" value="신한 110-234-567890 이서연"></div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="i_rsvp" checked> 참석 의사 전달(RSVP) 버튼 표시</label>
+            <label class="toggle" style="margin-top:8px"><input type="checkbox" id="i_gallery" checked> 갤러리 영역 표시</label>
+          </div>
+        </div>
+
+        <!-- RIGHT: preview -->
+        <div class="preview-col">
+          <div class="phone">
+            <div class="screen"><div class="inv" id="invPreview"></div></div>
+          </div>
+          <div class="export-bar">
+            <button class="btn primary" id="expImg">🖼️ 이미지(PNG)로 저장</button>
+            <button class="btn ghost" id="expHtml">💾 청첩장 HTML 파일 저장</button>
+            <button class="btn ghost" id="expKakao">💬 카톡 공유 문구 복사</button>
+          </div>
+          <p class="hint" style="text-align:center">저장한 HTML 파일은 그대로 카톡·문자로 공유하거나 웹에 올릴 수 있어요.</p>
+        </div>
+      </div>
+    </section>
+  </div><!-- /view-maker -->
+
+  <footer>
+    데이터 기반: 네이버 데이터랩 검색 트렌드(2023.06–2026.06), 네이버 쇼핑 실매물 가격대, 블로그 후기 정성 분석.<br>
+    점수형 지표(커스텀·실용성 등)는 후기·사양을 토대로 한 추정치로, 실제 업체·상품별 편차가 있습니다.<br>
+    생성일 2026.06.23 · 결혼식 청첩장 비교 분석 대시보드
+  </footer>
+</div>
+
+<script>
+// ---------- DATA ----------
+const types = [
+  {name:'미니멀·모던', delivery:'모바일', deliveryAll:['모바일','종이'], swatch:'#c9b8a8',
+   tag:'가장 인기', mood:'모던', moodLabel:'스몰웨딩·호텔', price:'저', priceMin:0.5, priceMax:2, priceMid:1.2,
+   custom:3, ease:5, practical:5, trend:5,
+   desc:'여백과 타이포 중심의 깔끔한 디자인. 사진 부담이 적고 셀프 제작이 쉬워 2030 세대 표준.'},
+  {name:'사진형·포토', delivery:'모바일', deliveryAll:['모바일','세트'], swatch:'#b9889c',
+   tag:'스냅 활용', mood:'감성', moodLabel:'일반 예식 전반', price:'저', priceMin:0.9, priceMax:2, priceMid:1.4,
+   custom:4, ease:4, practical:5, trend:5,
+   desc:'웨딩스냅 화보를 전면에 배치. 갤러리·슬라이드로 사진을 강조하는 모바일 대표 포맷.'},
+  {name:'일러스트·손그림', delivery:'세트', deliveryAll:['모바일','종이','세트'], swatch:'#7a9a8a',
+   tag:'개성·SNS', mood:'감성', moodLabel:'야외·스몰웨딩', price:'중', priceMin:1.4, priceMax:6, priceMid:3,
+   custom:5, ease:3, practical:4, trend:5,
+   desc:'손그림 캐릭터·수채화 패턴으로 개성 강조. 사진 없이도 따뜻한 감성, SNS 감성에 적합.'},
+  {name:'커스텀 일러스트', delivery:'종이', deliveryAll:['종이'], swatch:'#c08562',
+   tag:'프리미엄', mood:'감성', moodLabel:'특별한 소량 예식', price:'고', priceMin:6, priceMax:15, priceMid:10,
+   custom:5, ease:2, practical:3, trend:4,
+   desc:'작가가 커플을 직접 그려주는 1:1 맞춤 제작. 소량·고가지만 평생 소장 가치가 높음.'},
+  {name:'클래식·포멀', delivery:'종이', deliveryAll:['종이','세트'], swatch:'#9a7d3a',
+   tag:'격식', mood:'격식', moodLabel:'호텔·대형 예식', price:'중', priceMin:1.5, priceMax:5, priceMid:2.8,
+   custom:3, ease:3, practical:4, trend:3,
+   desc:'금박·레터프레스·고급 수입지의 정통 격식형. 부모님 세대와 호텔 예식에서 선호.'},
+  {name:'친환경·전통한복', delivery:'종이', deliveryAll:['종이'], swatch:'#6e8b5a',
+   tag:'에코·전통', mood:'격식', moodLabel:'전통혼례·친환경', price:'중', priceMin:1.5, priceMax:5, priceMid:3,
+   custom:4, ease:2, practical:3, trend:3,
+   desc:'재생지·씨앗지나 한지·한복 일러스트 활용. 전통혼례·가치소비 커플의 차별화 선택.'},
+  {name:'AI 모션·인터랙티브', delivery:'모바일', deliveryAll:['모바일'], swatch:'#5e7fa3',
+   tag:'신기술', mood:'모던', moodLabel:'트렌디 예식', price:'저', priceMin:0.9, priceMax:2, priceMid:1.3,
+   custom:4, ease:4, practical:5, trend:5,
+   desc:'사진을 AI로 움직이게 하는 모션포토·인터랙티브 효과. 신기술 선호 커플에게 화제성.'},
+  {name:'노포토·심플텍스트', delivery:'모바일', deliveryAll:['모바일','종이'], swatch:'#a89b8d',
+   tag:'간결', mood:'모던', moodLabel:'재혼·해외·비공개', price:'저', priceMin:0.5, priceMax:1.5, priceMid:0.9,
+   custom:3, ease:5, practical:4, trend:4,
+   desc:'사진 없이 문구·정보만 담은 간결형. 해외·재혼·비공개 예식이나 빠른 알림에 적합.'},
+];
+
+const fmtPrice = t => t.priceMin===t.priceMax ? t.priceMin+'만' : t.priceMin+'~'+t.priceMax+'만';
+const stars = n => '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,5-n);
+
+// ---------- CARDS ----------
+const grid = document.getElementById('cardGrid');
+const filter = {delivery:'all', price:'all', mood:'all'};
+function renderCards(){
+  const items = types.filter(t =>
+    (filter.delivery==='all'||t.deliveryAll.includes(filter.delivery)) &&
+    (filter.price==='all'||t.price===filter.price) &&
+    (filter.mood==='all'||t.mood===filter.mood));
+  grid.innerHTML = items.length ? items.map(t=>`
+    <div class="card">
+      <div class="swatch" style="background:${t.swatch}"></div>
+      <span class="tag">${t.tag}</span>
+      <div class="ttl">${t.name}</div>
+      <div class="desc">${t.desc}</div>
+      <div class="rows">
+        <div class="row"><span>전달 방식</span><span>${t.deliveryAll.join(' · ')}</span></div>
+        <div class="row"><span>가격대 (1인)</span><span>${fmtPrice(t)}원</span></div>
+        <div class="row"><span>커스터마이징</span><span class="stars">${stars(t.custom)}</span></div>
+        <div class="row"><span>제작 편의</span><span class="stars">${stars(t.ease)}</span></div>
+        <div class="row"><span>실용성</span><span class="stars">${stars(t.practical)}</span></div>
+        <div class="row"><span>어울리는 예식</span><span>${t.moodLabel}</span></div>
+      </div>
+    </div>`).join('') : '<div class="empty">조건에 맞는 유형이 없어요. 필터를 조정해 보세요.</div>';
+}
+document.querySelectorAll('.chips').forEach(g=>{
+  g.addEventListener('click',e=>{
+    if(!e.target.classList.contains('chip'))return;
+    const dim=g.dataset.dim;
+    g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+    e.target.classList.add('on');
+    filter[dim]=e.target.dataset.v;
+    renderCards();
+  });
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  filter.delivery=filter.price=filter.mood='all';
+  document.querySelectorAll('.chips').forEach(g=>{
+    g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('on',i===0));
+  });
+  renderCards();
+});
+renderCards();
+
+// ---------- TABLE ----------
+const tbody = document.querySelector('#compTable tbody');
+let sortK='trend', sortAsc=false;
+function renderTable(){
+  const sorted=[...types].sort((a,b)=>{
+    let x=a[sortK],y=b[sortK];
+    if(typeof x==='string')return sortAsc?x.localeCompare(y):y.localeCompare(x);
+    return sortAsc?x-y:y-x;
+  });
+  const pc={'모바일':'mo','종이':'pa','세트':'set'};
+  tbody.innerHTML=sorted.map(t=>`
+    <tr>
+      <td><b>${t.name}</b></td>
+      <td><span class="pill ${pc[t.delivery]}">${t.delivery}</span></td>
+      <td class="num">${t.priceMid}</td>
+      <td class="num">${t.custom}</td>
+      <td class="num">${t.ease}</td>
+      <td class="num">${t.practical}</td>
+      <td class="num">${t.trend}</td>
+      <td>${t.moodLabel}</td>
+    </tr>`).join('');
+}
+document.querySelectorAll('#compTable th').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const k=th.dataset.k;
+    if(sortK===k)sortAsc=!sortAsc; else {sortK=k;sortAsc=false;}
+    renderTable();
+  });
+});
+renderTable();
+
+// ---------- CHARTS ----------
+Chart.defaults.font.family="'Pretendard','Apple SD Gothic Neo',sans-serif";
+Chart.defaults.color='#8a7e76';
+const months=['23.06','','','23.09','','','23.12','','','24.03','','','24.06','','','24.09','','','24.12','','','25.03','','','25.06','','','25.09','','','25.12','','','26.03','','','26.06'];
+const mobileD=[55.4,86.7,100,94.1,86.3,64.4,58.3,83.2,79.3,84.1,78.3,65.3,64.2,87.3,97.6,91.1,82.8,69,68.9,81.3,81.3,81.9,69.7,69.7,74.7,90.2,98.9,96.5,83.4,76.8,66.2,74.1,59.7,61.7,52.1,53.1,42.9];
+const paperD=[4.1,4.9,5.8,5,4.6,4,4.2,6.6,5.1,5.2,4.9,4.8,5.5,7.1,7.6,6.5,6.8,5.7,6.6,7.1,6.1,6.4,5.7,6.8,7,7.8,9.2,7.8,7.2,5.6,5.3,7.2,5.2,5.2,4.5,4.9,4.2];
+const selfD=[5.5,6.6,6.6,5.3,5,4.6,4.8,7.9,6.6,6.2,5.6,7.2,8.4,10.4,9.6,8,9,11.2,12.5,14.4,13.2,13,11.5,13,13.9,13.7,13.7,13.3,11.9,11.5,10.7,12.5,9.4,9.9,9,11.2,10.1];
+
+new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{labels:months,datasets:[
+    {label:'모바일 청첩장',data:mobileD,borderColor:'#7a9a8a',backgroundColor:'rgba(122,154,138,.12)',fill:true,tension:.35,pointRadius:0,borderWidth:2.5},
+    {label:'셀프 청첩장',data:selfD,borderColor:'#c08562',backgroundColor:'transparent',tension:.35,pointRadius:0,borderWidth:2},
+    {label:'종이 청첩장',data:paperD,borderColor:'#b9889c',backgroundColor:'transparent',tension:.35,pointRadius:0,borderWidth:2,borderDash:[4,3]},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:14,font:{size:12}}}},
+    scales:{y:{beginAtZero:true,grid:{color:'#f0e9e3'},title:{display:true,text:'검색 상대지수'}},
+            x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:false,font:{size:10}}}}}
+});
+
+new Chart(document.getElementById('shareChart'),{
+  type:'doughnut',
+  data:{labels:['모바일','셀프(혼합)','종이'],
+    datasets:[{data:[74,16,10],backgroundColor:['#7a9a8a','#c08562','#b9889c'],borderWidth:2,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:12}},
+    tooltip:{callbacks:{label:c=>c.label+' '+c.raw+'%'}}}}
+});
+
+const rTypes=types.filter(t=>['미니멀·모던','사진형·포토','일러스트·손그림','클래식·포멀'].includes(t.name));
+const rColors=['#7a9a8a','#b9889c','#c08562','#9a7d3a'];
+new Chart(document.getElementById('radarChart'),{
+  type:'radar',
+  data:{labels:['가성비','커스터마이징','제작 편의','실용성','트렌드'],
+    datasets:rTypes.map((t,i)=>({label:t.name,
+      data:[6-({'저':1,'중':3,'고':5}[t.price]), t.custom, t.ease, t.practical, t.trend],
+      borderColor:rColors[i],backgroundColor:rColors[i]+'22',borderWidth:2,pointRadius:2.5}))},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:10,font:{size:11}}}},
+    scales:{r:{min:0,max:5,ticks:{stepSize:1,backdropColor:'transparent',font:{size:9}},
+      grid:{color:'#ece4de'},angleLines:{color:'#ece4de'},pointLabels:{font:{size:12}}}}}
+});
+
+new Chart(document.getElementById('priceChart'),{
+  type:'bar',
+  data:{labels:types.map(t=>t.name),
+    datasets:[{label:'최저가',data:types.map(t=>t.priceMin),backgroundColor:'#d9cabb'},
+      {label:'최고가',data:types.map(t=>t.priceMax-t.priceMin),backgroundColor:'#c08562'}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>c.datasetIndex===0?'최저 '+c.raw+'만원':''}}},
+    scales:{x:{stacked:true,grid:{color:'#f0e9e3'},title:{display:true,text:'만원'}},
+      y:{stacked:true,grid:{display:false},ticks:{font:{size:10.5}}}}}
+});
+
+// ====================================================================
+//  SELF-MAKER TOOL
+// ====================================================================
+// ---- tab switching ----
+document.querySelectorAll('.tabnav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tabnav button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+b.dataset.tab).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+
+// ---- templates & themes ----
+const makerTpls=[
+  {key:'minimal', tn:'미니멀', color:'#b89b86', font:"'Pretendard',sans-serif", serif:false},
+  {key:'photo',   tn:'사진형', color:'#a8728c', font:"'Pretendard',sans-serif", serif:false},
+  {key:'illust',  tn:'일러스트', color:'#7a9a8a', font:"'Pretendard',sans-serif", serif:false},
+  {key:'classic', tn:'클래식', color:'#9a7d3a', font:"Georgia,'Apple SD Gothic Neo',serif", serif:true},
+  {key:'eco',     tn:'내추럴', color:'#6e8b5a', font:"'Pretendard',sans-serif", serif:false},
+  {key:'romantic',tn:'로맨틱', color:'#c98a9a', font:"Georgia,'Apple SD Gothic Neo',serif", serif:true},
+  {key:'modern',  tn:'모던블루', color:'#5e7fa3', font:"'Pretendard',sans-serif", serif:false},
+  {key:'mono',    tn:'모노', color:'#5a534d', font:"'Pretendard',sans-serif", serif:false},
+];
+const themeColors=['#b89b86','#a8728c','#7a9a8a','#9a7d3a','#6e8b5a','#c98a9a','#5e7fa3','#5a534d'];
+const state={tpl:makerTpls[0], color:makerTpls[0].color, photo:null, photoRaw:null, imgStyle:'photo'};
+
+const tplGrid=document.getElementById('tplGrid');
+tplGrid.innerHTML=makerTpls.map((t,i)=>`
+  <div class="tpl${i===0?' on':''}" data-i="${i}">
+    <div class="dot" style="background:${t.color}"></div>
+    <div class="tn">${t.tn}</div>
+  </div>`).join('');
+tplGrid.addEventListener('click',e=>{
+  const el=e.target.closest('.tpl'); if(!el)return;
+  tplGrid.querySelectorAll('.tpl').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  state.tpl=makerTpls[+el.dataset.i];
+  state.color=state.tpl.color;
+  syncPalette();
+  render();
+});
+const palette=document.getElementById('palette');
+function syncPalette(){
+  palette.innerHTML=themeColors.map(c=>`
+    <div class="sw${c===state.color?' on':''}" data-c="${c}" style="background:${c}"></div>`).join('');
+}
+palette.addEventListener('click',e=>{
+  if(!e.target.classList.contains('sw'))return;
+  state.color=e.target.dataset.c;
+  palette.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));
+  e.target.classList.add('on');
+  render();
+});
+syncPalette();
+
+// ---- image style chips ----
+const imgChips=document.getElementById('imgStyleChips');
+imgChips.addEventListener('click',e=>{
+  if(!e.target.classList.contains('chip'))return;
+  imgChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  e.target.classList.add('on');
+  state.imgStyle=e.target.dataset.v;
+  document.getElementById('photoField').style.display = state.imgStyle==='motif'?'none':'';
+  processImage();
+});
+
+// ---- photo upload ----
+document.getElementById('i_photo').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=ev=>{state.photoRaw=ev.target.result;processImage();};
+  r.readAsDataURL(f);
+});
+
+// ---- canvas image processing (사진 → 일러스트/스케치/수채화 등) ----
+function posterize(ctx,w,h,levels){
+  const d=ctx.getImageData(0,0,w,h), p=d.data, step=255/(levels-1);
+  for(let i=0;i<p.length;i+=4){
+    p[i]=Math.round(Math.round(p[i]/step)*step);
+    p[i+1]=Math.round(Math.round(p[i+1]/step)*step);
+    p[i+2]=Math.round(Math.round(p[i+2]/step)*step);
+  }
+  ctx.putImageData(d,0,0);
+}
+function pencilSketch(ctx,img,w,h,lineOnly){
+  ctx.clearRect(0,0,w,h);
+  ctx.filter='grayscale(1) brightness(1.02)'; ctx.drawImage(img,0,0,w,h); ctx.filter='none';
+  const inv=document.createElement('canvas'); inv.width=w; inv.height=h;
+  const ix=inv.getContext('2d');
+  ix.filter='grayscale(1) invert(1) blur('+Math.max(2,Math.round(w/120))+'px)';
+  ix.drawImage(img,0,0,w,h);
+  ctx.globalCompositeOperation='color-dodge';
+  ctx.drawImage(inv,0,0);
+  ctx.globalCompositeOperation='source-over';
+  if(lineOnly){
+    const d=ctx.getImageData(0,0,w,h), p=d.data;
+    for(let i=0;i<p.length;i+=4){
+      const v=(p[i]+p[i+1]+p[i+2])/3, t=v<150?0:255;
+      p[i]=p[i+1]=p[i+2]=t;
+    }
+    ctx.putImageData(d,0,0);
+  }
+}
+function processImage(){
+  if(state.imgStyle==='motif'){ state.photo=null; render(); return; }
+  if(!state.photoRaw){ state.photo=null; render(); return; }
+  const img=new Image();
+  img.onload=()=>{
+    let w=img.width,h=img.height;
+    const max=900; if(w>max){h=Math.round(h*max/w);w=max;}
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    const ctx=cv.getContext('2d'); const s=state.imgStyle;
+    if(s==='photo'){ ctx.drawImage(img,0,0,w,h); }
+    else if(s==='illust'){ ctx.filter='saturate(1.55) contrast(1.18) brightness(1.05)';
+      ctx.drawImage(img,0,0,w,h); ctx.filter='none'; posterize(ctx,w,h,6); }
+    else if(s==='water'){ ctx.filter='saturate(1.4) brightness(1.08) blur(1.1px)';
+      ctx.drawImage(img,0,0,w,h); ctx.filter='none'; posterize(ctx,w,h,10); }
+    else if(s==='sketch'){ pencilSketch(ctx,img,w,h,false); }
+    else if(s==='line'){ pencilSketch(ctx,img,w,h,true); }
+    state.photo=cv.toDataURL('image/jpeg',0.9);
+    render();
+  };
+  img.src=state.photoRaw;
+}
+
+// ---- decorative floral SVG (사진 없이 일러스트 모드) ----
+function motifSVG(c){
+  return `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" fill="none"
+    stroke="${c}" stroke-width="1.6" stroke-linecap="round">
+    <circle cx="100" cy="120" r="78" stroke-opacity=".35"/>
+    <g stroke-opacity=".9">
+      <path d="M100 60 C92 78 92 96 100 112 C108 96 108 78 100 60Z"/>
+      <path d="M100 112 C84 104 70 106 58 116 C74 124 90 122 100 112Z"/>
+      <path d="M100 112 C116 104 130 106 142 116 C126 124 110 122 100 112Z"/>
+      <circle cx="100" cy="112" r="5" fill="${c}" stroke="none"/>
+      <path d="M60 150 q10 -22 20 0" /><path d="M62 150 q8 -16 16 0"/>
+      <circle cx="70" cy="146" r="3" fill="${c}" stroke="none"/>
+      <path d="M120 150 q10 -22 20 0"/><path d="M122 150 q8 -16 16 0"/>
+      <circle cx="130" cy="146" r="3" fill="${c}" stroke="none"/>
+      <path d="M70 175 C85 168 115 168 130 175" stroke-opacity=".6"/>
+    </g>
+    <text x="100" y="210" text-anchor="middle" font-family="Georgia,serif" font-size="15"
+      fill="${c}" stroke="none" letter-spacing="2">Just Married</text>
+  </svg>`;
+}
+
+// ---- gather inputs ----
+const $=id=>document.getElementById(id);
+function getData(){
+  const d=$('i_date').value, t=$('i_time').value;
+  let dateStr='', dday='';
+  if(d){
+    const dt=new Date(d+'T'+(t||'00:00'));
+    const days=['일','월','화','수','목','금','토'];
+    dateStr=`${dt.getFullYear()}년 ${dt.getMonth()+1}월 ${dt.getDate()}일 ${days[dt.getDay()]}요일`;
+    if(t){let h=dt.getHours();const ap=h<12?'오전':'오후';if(h>12)h-=12;if(h===0)h=12;
+      dateStr+=` ${ap} ${h}시${dt.getMinutes()?' '+dt.getMinutes()+'분':''}`;}
+    const diff=Math.ceil((new Date(d)-new Date(new Date().toDateString()))/864e5);
+    dday=diff>0?`D-${diff}`:diff===0?'D-DAY':`결혼 ${-diff}일째`;
+  }
+  return {groom:$('i_groom').value,bride:$('i_bride').value,date:dateStr,dday,
+    headline:$('i_headline').value,greeting:$('i_greeting').value,
+    gparents:$('i_gparents').value,bparents:$('i_bparents').value,
+    venue:$('i_venue').value,addr:$('i_addr').value,transport:$('i_transport').value,
+    gacct:$('i_gacct').value,bacct:$('i_bacct').value,
+    rsvp:$('i_rsvp').checked,gallery:$('i_gallery').checked};
+}
+
+// ---- render invitation markup ----
+function invHTML(D,c,serif){
+  const nl=s=>(s||'').replace(/\n/g,'<br>');
+  let photo;
+  if(state.imgStyle==='motif'){
+    photo=`<div class="photo motif">${motifSVG(c)}</div>`;
+  }else if(state.photo){
+    photo=`<div class="photo" style="background-image:url('${state.photo}')"></div>`;
+  }else{
+    photo=`<div class="photo ph">사진을 업로드하면 여기에 표시됩니다</div>`;
+  }
+  return `
+  <div class="hero" style="${serif?'font-family:Georgia,serif':''}">
+    <div class="label" style="color:${c}">THE MARRIAGE OF</div>
+    ${photo}
+    <div class="names">${D.groom||'신랑'} <span style="color:${c}">&hearts;</span> ${D.bride||'신부'}</div>
+    <div class="date">${D.date||'예식 일시'}</div>
+    ${D.dday?`<div class="dday" style="background:${c}1f;color:${c}">${D.dday}</div>`:''}
+    <div style="font-size:13px;margin-top:18px;line-height:1.6;color:#5a514a">${D.headline||''}</div>
+  </div>
+  <div class="sec">
+    <div class="st" style="color:${c}">INVITATION</div>
+    <div class="greet">${nl(D.greeting)}</div>
+    <div style="margin-top:18px;font-size:12.5px;line-height:1.9;color:#6a615a">
+      ${D.gparents||''}<br>${D.bparents||''}</div>
+  </div>
+  <div class="sec">
+    <div class="st" style="color:${c}">WEDDING DAY</div>
+    <div class="info-row"><b>${D.date||'예식 일시 미입력'}</b></div>
+  </div>
+  ${D.gallery?`<div class="sec"><div class="st" style="color:${c}">GALLERY</div>
+    <div class="gallery">${'<div></div>'.repeat(6)}</div></div>`:''}
+  <div class="sec">
+    <div class="st" style="color:${c}">LOCATION</div>
+    <div class="map-ph">🗺️ ${D.venue||'예식장'} 지도</div>
+    <div class="info-row"><b>${D.venue||'예식장 이름'}</b><br>${D.addr||'주소'}</div>
+    ${D.transport?`<div class="info-row" style="font-size:12px;color:#80766d;margin-top:8px">${nl(D.transport)}</div>`:''}
+  </div>
+  <div class="sec">
+    <div class="st" style="color:${c}">마음 전하실 곳</div>
+    <div class="acct">🤵 신랑측 · ${D.gacct||'-'}<br>👰 신부측 · ${D.bacct||'-'}</div>
+  </div>
+  ${D.rsvp?`<div class="sec">
+    <div class="st" style="color:${c}">참석 의사 전달</div>
+    <div style="font-size:12.5px;color:#6a615a">참석 여부를 미리 알려주시면<br>정성껏 준비하겠습니다.</div>
+    <span class="rsvp-btn" style="background:${c}">참석 의사 전달하기</span></div>`:''}
+  <div class="foot">${D.groom||'신랑'} &amp; ${D.bride||'신부'} · Wedding Invitation</div>`;
+}
+function render(){
+  const D=getData(), el=$('invPreview');
+  el.style.fontFamily=state.tpl.font;
+  el.innerHTML=invHTML(D,state.color,state.tpl.serif);
+}
+// re-render on any input change
+document.querySelectorAll('#view-maker input,#view-maker textarea').forEach(inp=>{
+  inp.addEventListener('input',render); inp.addEventListener('change',render);
+});
+render();
+
+// ---- export: PNG ----
+$('expImg').addEventListener('click',()=>{
+  const node=$('invPreview');
+  html2canvas(node,{scale:2,backgroundColor:'#ffffff',windowWidth:node.scrollWidth,
+    height:node.scrollHeight,windowHeight:node.scrollHeight}).then(cv=>{
+    const a=document.createElement('a');
+    a.download='청첩장_'+getData().groom+'_'+getData().bride+'.png';
+    a.href=cv.toDataURL('image/png'); a.click();
+  });
+});
+
+// ---- export: standalone HTML ----
+const INV_CSS=`
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#e9e3dd;display:flex;justify-content:center;padding:20px 0}
+.screen{width:380px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.12)}
+.inv{color:#3a322c;line-height:1.55}
+.inv .hero{padding:46px 26px 30px;text-align:center}
+.inv .hero .label{font-size:11px;letter-spacing:.3em;font-weight:700;opacity:.7}
+.inv .photo{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;margin:16px 0;background:#eee9e4 center/cover;background-size:cover}
+.inv .photo.ph{display:flex;align-items:center;justify-content:center;color:#b3a89e;font-size:12px}
+.inv .photo.motif{display:flex;align-items:center;justify-content:center;background:#faf6f2}
+.inv .photo.motif svg{width:82%;height:82%}
+.inv .names{font-size:24px;font-weight:800;margin:6px 0 3px}
+.inv .date{font-size:13px;opacity:.85}
+.inv .sec{padding:28px 28px;text-align:center;border-top:1px solid #f0ebe6}
+.inv .st{font-size:11px;letter-spacing:.25em;font-weight:700;margin-bottom:12px;opacity:.65}
+.inv .greet{font-size:13.5px;line-height:2}
+.inv .info-row{font-size:13.5px;line-height:1.9}
+.inv .dday{display:inline-block;margin-top:10px;font-size:12px;padding:5px 14px;border-radius:20px;font-weight:700}
+.inv .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.inv .gallery div{aspect-ratio:1;border-radius:7px;background:#ece6e0}
+.inv .acct{font-size:12.5px;line-height:1.95;background:#faf6f2;border-radius:10px;padding:13px 15px;text-align:left}
+.inv .map-ph{height:120px;border-radius:10px;background:#eae4dd;display:flex;align-items:center;justify-content:center;color:#a99e93;font-size:12px;margin-bottom:10px}
+.inv .rsvp-btn{margin-top:10px;display:inline-block;padding:11px 26px;border-radius:24px;color:#fff;font-size:13px;font-weight:700}
+.inv .foot{padding:24px;text-align:center;font-size:11px;opacity:.5}`;
+$('expHtml').addEventListener('click',()=>{
+  const D=getData();
+  const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${D.groom} ♥ ${D.bride} 결혼합니다</title>
+<style>${INV_CSS}
+.inv{font-family:${state.tpl.serif?"Georgia,'Apple SD Gothic Neo',serif":"'Apple SD Gothic Neo','Malgun Gothic',sans-serif"}}</style>
+</head><body><div class="screen"><div class="inv">${invHTML(D,state.color,state.tpl.serif)}</div></div></body></html>`;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.download='모바일청첩장_'+D.groom+'_'+D.bride+'.html';
+  a.href=URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href);
+});
+
+// ---- export: kakao share text ----
+$('expKakao').addEventListener('click',()=>{
+  const D=getData();
+  const txt=`💌 ${D.groom} ♥ ${D.bride} 결혼합니다\n\n`+
+    `${D.headline}\n\n`+
+    `📅 ${D.date}\n`+
+    `📍 ${D.venue}\n   ${D.addr}\n\n`+
+    `${D.transport?'🚗 '+D.transport.replace(/\n/g,'\n   ')+'\n\n':''}`+
+    `💝 마음 전하실 곳\n   신랑측 ${D.gacct}\n   신부측 ${D.bacct}\n\n`+
+    `소중한 걸음으로 축복해 주세요 🙏`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=$('expKakao'),o=b.textContent;
+    b.textContent='✅ 복사 완료!'; setTimeout(()=>b.textContent=o,1600);
+  }).catch(()=>{
+    prompt('아래 문구를 복사하세요:',txt);
+  });
+});
+</script>
+</body>
+</html>
